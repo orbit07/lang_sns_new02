@@ -270,6 +270,17 @@ button {
   flex-direction: column;
   gap: 10px;
 }
+.speaker-select { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.speaker-select-label { font-weight: 600; color: #334e68; }
+.speaker-options { display: flex; gap: 8px; flex-wrap: wrap; }
+.speaker-option { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: #f8fbff; cursor: pointer; transition: border-color 120ms ease, box-shadow 120ms ease; }
+.speaker-option:hover { border-color: #57a8ff; box-shadow: 0 4px 12px rgba(87, 168, 255, 0.2); }
+.speaker-option-input { display: none; }
+.speaker-option-icon { width: 24px; height: 24px; border-radius: 50%; }
+.speaker-option-input:checked + .speaker-option-icon { box-shadow: 0 0 0 2px #57a8ff; }
+.speaker-option-input:checked + .speaker-option-icon + .speaker-option-text { color: #1f7aee; font-weight: 700; }
+.speaker-option-text { font-size: 1.4rem; color: var(--muted); }
+
 .text-area {
   width: 100%;
   padding: 5px;
@@ -280,6 +291,7 @@ button {
   border: 1px solid #57a8ff;
 }
 .text-area:focus { outline: none; }
+.speaker-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: #eef6ff; color: #334e68; font-weight: 600; }
 .pronunciation-input {
   width: 100%;
   padding: 5px;
