@@ -316,6 +316,22 @@ button {
   padding: 10px 20px;
   background: rgba(255, 255, 255, .5);
 }
+.modal-tag-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 15px 10px;
+}
+.tag-label {
+  font-weight: 600;
+  color: #334e68;
+}
+.tag-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #57a8ff;
+  border-radius: 10px;
+}
 .modal-action-button {
   height: 25px;
   width: 25px;

@@ -234,6 +234,19 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
   const container = document.createElement('div');
   container.className = 'modal-body-section';
   fragment.appendChild(container);
+  const tagSection = document.createElement('div');
+  tagSection.className = 'modal-tag-section';
+  const tagLabel = document.createElement('label');
+  tagLabel.textContent = 'タグ';
+  tagLabel.className = 'tag-label';
+  const tagInput = document.createElement('input');
+  tagInput.type = 'text';
+  tagInput.placeholder = '#タグ をスペースまたはカンマ区切りで入力';
+  tagInput.className = 'tag-input';
+  if (targetPost?.tags?.length) {
+    tagInput.value = targetPost.tags.map((t) => `#${t}`).join(' ');
+  }
+  tagSection.append(tagLabel, tagInput);
   const textAreaContainer = document.createElement('div');
   textAreaContainer.id = 'text-block-container';
   textAreaContainer.classList.add('text-block-container');
@@ -358,7 +371,12 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
       alert('テキストを入力してください。');
       return;
     }
-    const tags = extractTags(textBlocks);
+    const tagsFromText = extractTags(textBlocks);
+    const manualTags = tagInput.value
+      .split(/[\s,、]+/)
+      .map((t) => t.replace(/^#/, '').trim())
+      .filter((t) => t.length > 0);
+    const tags = Array.from(new Set([...tagsFromText, ...manualTags]));
     let imageId = targetPost ? targetPost.imageId : null;
 
     if (imageDataUrl) {
@@ -421,6 +439,7 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
   container.appendChild(textAreaContainer);
   container.appendChild(addBtn);
   container.appendChild(imageRow);
+  fragment.appendChild(tagSection);
   fragment.appendChild(actions);
   return fragment;
 }
