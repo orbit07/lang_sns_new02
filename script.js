@@ -183,45 +183,66 @@ function closeModal() {
   hideModalElement(document.getElementById('modal'));
 }
 
-function createSpeakerSelector(selected = 'none') {
+function createSpeakerSelector(selected = 'me') {
   const wrapper = document.createElement('div');
   wrapper.className = 'speaker-select';
 
-  const label = document.createElement('span');
-  label.className = 'speaker-select-label';
-  label.textContent = '話し手';
-  wrapper.appendChild(label);
+  const hiddenValue = document.createElement('input');
+  hiddenValue.type = 'hidden';
+  hiddenValue.className = 'speaker-select-value';
+  hiddenValue.value = selected;
 
-  const list = document.createElement('div');
-  list.className = 'speaker-options';
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'speaker-select-trigger';
 
-  const name = `speaker-${Math.random().toString(36).slice(2)}`;
+  const dropdown = document.createElement('div');
+  dropdown.className = 'speaker-options';
+
+  const updateTrigger = (value) => {
+    hiddenValue.value = value;
+    trigger.innerHTML = '';
+    const selectedOpt = speakerOptions.find((opt) => opt.value === value) || speakerOptions[0];
+    const img = document.createElement('img');
+    img.src = selectedOpt.icon;
+    img.alt = selectedOpt.label;
+    img.className = 'speaker-option-icon';
+    trigger.appendChild(img);
+  };
 
   speakerOptions.forEach((opt) => {
-    const optionLabel = document.createElement('label');
-    optionLabel.className = 'speaker-option';
-
-    const input = document.createElement('input');
-    input.type = 'radio';
-    input.name = name;
-    input.value = opt.value;
-    input.className = 'speaker-option-input';
-    input.checked = opt.value === selected;
+    const optionBtn = document.createElement('button');
+    optionBtn.type = 'button';
+    optionBtn.className = 'speaker-option';
+    optionBtn.title = opt.label;
+    optionBtn.setAttribute('aria-label', opt.label);
 
     const img = document.createElement('img');
     img.src = opt.icon;
     img.alt = opt.label;
     img.className = 'speaker-option-icon';
 
-    const text = document.createElement('span');
-    text.textContent = opt.label;
-    text.className = 'speaker-option-text';
-
-    optionLabel.append(input, img, text);
-    list.appendChild(optionLabel);
+    optionBtn.appendChild(img);
+    optionBtn.addEventListener('click', () => {
+      updateTrigger(opt.value);
+      dropdown.classList.remove('open');
+    });
+    dropdown.appendChild(optionBtn);
   });
 
-  wrapper.appendChild(list);
+  trigger.addEventListener('click', () => {
+    dropdown.classList.toggle('open');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrapper.contains(e.target)) {
+      dropdown.classList.remove('open');
+    }
+  });
+
+  updateTrigger(selected);
+
+  wrapper.append(hiddenValue, trigger, dropdown);
   return wrapper;
 }
 
@@ -236,15 +257,11 @@ function createSpeakerBadge(type = 'none') {
   img.width = 20;
   img.height = 20;
   img.className = 'icon-inline';
-
-  const text = document.createElement('span');
-  text.textContent = info.label;
-
-  badge.append(img, text);
+  badge.append(img);
   return badge;
 }
 
-function createTextBlockInput(value = '', lang = 'ja', pronunciation = '', speakerType = 'none', removable = true, onRemove = null) {
+function createTextBlockInput(value = '', lang = 'ja', pronunciation = '', speakerType = 'me', removable = true, onRemove = null) {
   const wrapper = document.createElement('div');
   wrapper.className = 'text-area-wrapper';
 
@@ -332,7 +349,7 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
 
   const handleTextBlockChange = () => updateTextControls();
 
-  const addTextBlock = (content = '', language = 'ja', pronunciation = '', speakerType = 'none') => {
+  const addTextBlock = (content = '', language = 'ja', pronunciation = '', speakerType = 'me') => {
     const block = createTextBlockInput(content, language, pronunciation, speakerType, true, handleTextBlockChange);
     textAreaContainer.appendChild(block);
     handleTextBlockChange();
@@ -434,7 +451,7 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
       content: el.querySelector('.text-area').value.trim(),
       language: el.querySelector('.language-select-input').value,
       pronunciation: el.querySelector('.pronunciation-input').value.trim(),
-      speaker_type: el.querySelector('.speaker-option-input:checked')?.value || 'none',
+      speaker_type: el.querySelector('.speaker-select-value')?.value || 'me',
     }));
     const hasContent = textBlocks.some((t) => t.content.length > 0);
     if (!hasContent) {
@@ -583,30 +600,33 @@ function renderPostCard(post, options = {}) {
   const actions = node.querySelector('.card-actions');
   const repliesWrap = node.querySelector('.replies');
 
-    meta.innerHTML = '';
-    const metaText = document.createElement('span');
-    metaText.className = 'card-meta-item';
-    metaText.textContent = `${formatDate(post.createdAt)}${post.updatedAt && post.updatedAt !== post.createdAt ? '（Edited）' : ''}`;
-    meta.appendChild(metaText);
+  meta.innerHTML = '';
+  const metaText = document.createElement('span');
+  metaText.className = 'card-meta-item';
+  metaText.textContent = `${formatDate(post.createdAt)}${post.updatedAt && post.updatedAt !== post.createdAt ? '（Edited）' : ''}`;
+  meta.appendChild(metaText);
 
-    if (post.repostOf) {
-      const repostInfo = document.createElement('span');
-      repostInfo.className = 'card-meta-item repost-info';
-      repostInfo.innerHTML = '/ <img src="img/repost.svg" alt="リポスト" width="16" class="icon-inline"> Repost';
-      meta.appendChild(repostInfo);
-    }
+  if (post.repostOf) {
+    const repostInfo = document.createElement('span');
+    repostInfo.className = 'card-meta-item repost-info';
+    repostInfo.innerHTML = '/ <img src="img/repost.svg" alt="リポスト" width="16" class="icon-inline"> Repost';
+    meta.appendChild(repostInfo);
+  }
 
   body.innerHTML = '';
   if (post.isDeleted) {
     body.innerHTML = '<div class="text-block">このポストは削除されました</div>';
   } else {
     post.texts.forEach((t) => {
+      const blockGroup = document.createElement('div');
+      blockGroup.className = 'text-block-group';
+      const speakerBadge = createSpeakerBadge(t.speaker_type || 'none');
+      blockGroup.appendChild(speakerBadge);
+
       const block = document.createElement('div');
       block.className = 'text-block';
       const label = document.createElement('div');
       label.className = 'text-label';
-      const speakerBadge = createSpeakerBadge(t.speaker_type || 'none');
-      label.appendChild(speakerBadge);
       const languageLabel = getLanguageLabel(t.language);
       const option = langOptions.find((opt) => opt.value === t.language);
       if (option?.speakable) {
@@ -632,7 +652,8 @@ function renderPostCard(post, options = {}) {
         pronunciation.textContent = t.pronunciation;
         block.appendChild(pronunciation);
       }
-      body.appendChild(block);
+      blockGroup.appendChild(block);
+      body.appendChild(blockGroup);
     });
 
     if (post.imageRemoved) {
@@ -716,12 +737,15 @@ function renderPostCard(post, options = {}) {
     const bodyRow = document.createElement('div');
     bodyRow.className = 'card-body';
     reply.texts.forEach((t) => {
+      const blockGroup = document.createElement('div');
+      blockGroup.className = 'text-block-group';
+      const speakerBadge = createSpeakerBadge(t.speaker_type || 'none');
+      blockGroup.appendChild(speakerBadge);
+
       const block = document.createElement('div');
       block.className = 'text-block';
       const label = document.createElement('div');
       label.className = 'text-label';
-      const speakerBadge = createSpeakerBadge(t.speaker_type || 'none');
-      label.appendChild(speakerBadge);
       const languageLabel = getLanguageLabel(t.language);
       const option = langOptions.find((opt) => opt.value === t.language);
       if (option?.speakable) {
@@ -746,7 +770,8 @@ function renderPostCard(post, options = {}) {
         pronunciation.textContent = t.pronunciation;
         block.appendChild(pronunciation);
       }
-      bodyRow.appendChild(block);
+      blockGroup.appendChild(block);
+      bodyRow.appendChild(blockGroup);
     });
     if (reply.imageId && state.data.images[reply.imageId]) {
       const img = document.createElement('img');
