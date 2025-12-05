@@ -32,6 +32,22 @@ const speakerOptions = [
   { value: 'none', label: '未指定', icon: 'img/icon_none.png' },
 ];
 
+function createSpeakerIcon({ icon, label }) {
+  const wrapper = document.createElement('span');
+  wrapper.className = 'speaker-icon-wrapper';
+
+  const img = document.createElement('img');
+  img.src = icon;
+  img.alt = label;
+
+  const text = document.createElement('span');
+  text.className = 'speaker-icon-label';
+  text.textContent = label;
+
+  wrapper.append(img, text);
+  return wrapper;
+}
+
 const getLanguageLabel = (value) => langOptions.find((opt) => opt.value === value)?.label || value;
 
 function loadData() {
@@ -203,11 +219,7 @@ function createSpeakerSelector(selected = 'me') {
     hiddenValue.value = value;
     trigger.innerHTML = '';
     const selectedOpt = speakerOptions.find((opt) => opt.value === value) || speakerOptions[0];
-    const img = document.createElement('img');
-    img.src = selectedOpt.icon;
-    img.alt = selectedOpt.label;
-    img.className = 'speaker-option-icon';
-    trigger.appendChild(img);
+    trigger.appendChild(createSpeakerIcon(selectedOpt));
   };
 
   speakerOptions.forEach((opt) => {
@@ -217,12 +229,7 @@ function createSpeakerSelector(selected = 'me') {
     optionBtn.title = opt.label;
     optionBtn.setAttribute('aria-label', opt.label);
 
-    const img = document.createElement('img');
-    img.src = opt.icon;
-    img.alt = opt.label;
-    img.className = 'speaker-option-icon';
-
-    optionBtn.appendChild(img);
+    optionBtn.appendChild(createSpeakerIcon(opt));
     optionBtn.addEventListener('click', () => {
       updateTrigger(opt.value);
       dropdown.classList.remove('open');
@@ -252,13 +259,7 @@ function createSpeakerBadge(type = 'none') {
   const badge = document.createElement('span');
   badge.className = 'speaker-badge';
 
-  const img = document.createElement('img');
-  img.src = info.icon;
-  img.alt = info.label;
-  img.width = 40;
-  img.height = 40;
-  img.className = 'icon-inline';
-  badge.append(img);
+  badge.append(createSpeakerIcon(info));
   return badge;
 }
 
