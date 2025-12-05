@@ -236,9 +236,6 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
   fragment.appendChild(container);
   const tagSection = document.createElement('div');
   tagSection.className = 'modal-tag-section';
-  const tagLabel = document.createElement('label');
-  tagLabel.textContent = 'タグ';
-  tagLabel.className = 'tag-label';
   const tagInput = document.createElement('input');
   tagInput.type = 'text';
   tagInput.placeholder = '#タグ をスペースまたはカンマ区切りで入力';
@@ -246,7 +243,7 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
   if (targetPost?.tags?.length) {
     tagInput.value = targetPost.tags.map((t) => `#${t}`).join(' ');
   }
-  tagSection.append(tagLabel, tagInput);
+  tagSection.append(tagInput);
   const textAreaContainer = document.createElement('div');
   textAreaContainer.id = 'text-block-container';
   textAreaContainer.classList.add('text-block-container');
