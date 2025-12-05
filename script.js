@@ -254,8 +254,8 @@ function createSpeakerBadge(type = 'none') {
   const img = document.createElement('img');
   img.src = info.icon;
   img.alt = info.label;
-  img.width = 20;
-  img.height = 20;
+  img.width = 40;
+  img.height = 40;
   img.className = 'icon-inline';
   badge.append(img);
   return badge;
