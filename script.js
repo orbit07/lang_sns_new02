@@ -234,11 +234,12 @@ function createSpeakerSelector(selected = 'me') {
     dropdown.classList.toggle('open');
   });
 
-  document.addEventListener('click', (e) => {
+  const handleOutside = (e) => {
     if (!wrapper.contains(e.target)) {
       dropdown.classList.remove('open');
     }
-  });
+  };
+  document.addEventListener('pointerdown', handleOutside);
 
   updateTrigger(selected);
 
@@ -268,17 +269,20 @@ function createTextBlockInput(value = '', lang = 'ja', pronunciation = '', speak
   const speakerSelector = createSpeakerSelector(speakerType);
   wrapper.appendChild(speakerSelector);
 
+  const fieldContainer = document.createElement('div');
+  fieldContainer.className = 'text-area-fields';
+
   const textarea = document.createElement('textarea');
   textarea.value = value;
   textarea.className = 'text-area';
-  wrapper.appendChild(textarea);
+  fieldContainer.appendChild(textarea);
 
   const pronunciationInput = document.createElement('input');
   pronunciationInput.type = 'text';
   pronunciationInput.placeholder = '発音（任意）';
   pronunciationInput.className = 'pronunciation-input';
   pronunciationInput.value = pronunciation;
-  wrapper.appendChild(pronunciationInput);
+  fieldContainer.appendChild(pronunciationInput);
 
   const langRow = document.createElement('div');
   langRow.className = 'language-select';
@@ -301,7 +305,8 @@ function createTextBlockInput(value = '', lang = 'ja', pronunciation = '', speak
   speakBtn.addEventListener('click', () => playSpeech(textarea.value, select.value));
   langRow.appendChild(speakBtn);
 
-  wrapper.appendChild(langRow);
+  fieldContainer.appendChild(langRow);
+  wrapper.appendChild(fieldContainer);
   if (removable) {
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
