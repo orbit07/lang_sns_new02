@@ -24,6 +24,14 @@ const langOptions = [
   { value: 'zh-TW', label: '台湾華語', voiceHint: 'Meijia', speakable: true },
 ];
 
+const speakerOptions = [
+  { value: 'me', label: 'わたし', icon: 'img/icon_me.png' },
+  { value: 'friend', label: '友だち', icon: 'img/icon_friend.png' },
+  { value: 'staff', label: '店員', icon: 'img/icon_staff.png' },
+  { value: 'other', label: 'その他', icon: 'img/icon_other.png' },
+  { value: 'none', label: '未指定', icon: 'img/icon_none.png' },
+];
+
 const getLanguageLabel = (value) => langOptions.find((opt) => opt.value === value)?.label || value;
 
 function loadData() {
@@ -175,9 +183,73 @@ function closeModal() {
   hideModalElement(document.getElementById('modal'));
 }
 
-function createTextBlockInput(value = '', lang = 'ja', pronunciation = '', removable = true, onRemove = null) {
+function createSpeakerSelector(selected = 'none') {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'speaker-select';
+
+  const label = document.createElement('span');
+  label.className = 'speaker-select-label';
+  label.textContent = '話し手';
+  wrapper.appendChild(label);
+
+  const list = document.createElement('div');
+  list.className = 'speaker-options';
+
+  const name = `speaker-${Math.random().toString(36).slice(2)}`;
+
+  speakerOptions.forEach((opt) => {
+    const optionLabel = document.createElement('label');
+    optionLabel.className = 'speaker-option';
+
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = name;
+    input.value = opt.value;
+    input.className = 'speaker-option-input';
+    input.checked = opt.value === selected;
+
+    const img = document.createElement('img');
+    img.src = opt.icon;
+    img.alt = opt.label;
+    img.className = 'speaker-option-icon';
+
+    const text = document.createElement('span');
+    text.textContent = opt.label;
+    text.className = 'speaker-option-text';
+
+    optionLabel.append(input, img, text);
+    list.appendChild(optionLabel);
+  });
+
+  wrapper.appendChild(list);
+  return wrapper;
+}
+
+function createSpeakerBadge(type = 'none') {
+  const info = speakerOptions.find((opt) => opt.value === type) || speakerOptions.find((opt) => opt.value === 'none');
+  const badge = document.createElement('span');
+  badge.className = 'speaker-badge';
+
+  const img = document.createElement('img');
+  img.src = info.icon;
+  img.alt = info.label;
+  img.width = 20;
+  img.height = 20;
+  img.className = 'icon-inline';
+
+  const text = document.createElement('span');
+  text.textContent = info.label;
+
+  badge.append(img, text);
+  return badge;
+}
+
+function createTextBlockInput(value = '', lang = 'ja', pronunciation = '', speakerType = 'none', removable = true, onRemove = null) {
   const wrapper = document.createElement('div');
   wrapper.className = 'text-area-wrapper';
+
+  const speakerSelector = createSpeakerSelector(speakerType);
+  wrapper.appendChild(speakerSelector);
 
   const textarea = document.createElement('textarea');
   textarea.value = value;
@@ -263,8 +335,8 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
 
   const handleTextBlockChange = () => updateTextControls();
 
-  const addTextBlock = (content = '', language = 'ja', pronunciation = '') => {
-    const block = createTextBlockInput(content, language, pronunciation, true, handleTextBlockChange);
+  const addTextBlock = (content = '', language = 'ja', pronunciation = '', speakerType = 'none') => {
+    const block = createTextBlockInput(content, language, pronunciation, speakerType, true, handleTextBlockChange);
     textAreaContainer.appendChild(block);
     handleTextBlockChange();
   };
@@ -272,7 +344,7 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
   if (targetPost) {
     textAreaContainer.innerHTML = '';
     const texts = targetPost.texts || [{ content: '', language: 'ja' }];
-    texts.forEach((t) => addTextBlock(t.content, t.language, t.pronunciation || ''));
+    texts.forEach((t) => addTextBlock(t.content, t.language, t.pronunciation || '', t.speaker_type || 'none'));
   } else {
     addTextBlock();
   }
@@ -365,6 +437,7 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
       content: el.querySelector('.text-area').value.trim(),
       language: el.querySelector('.language-select-input').value,
       pronunciation: el.querySelector('.pronunciation-input').value.trim(),
+      speaker_type: el.querySelector('.speaker-option-input:checked')?.value || 'none',
     }));
     const hasContent = textBlocks.some((t) => t.content.length > 0);
     if (!hasContent) {
@@ -535,6 +608,8 @@ function renderPostCard(post, options = {}) {
       block.className = 'text-block';
       const label = document.createElement('div');
       label.className = 'text-label';
+      const speakerBadge = createSpeakerBadge(t.speaker_type || 'none');
+      label.appendChild(speakerBadge);
       const languageLabel = getLanguageLabel(t.language);
       const option = langOptions.find((opt) => opt.value === t.language);
       if (option?.speakable) {
@@ -545,7 +620,9 @@ function renderPostCard(post, options = {}) {
         play.addEventListener('click', () => playSpeech(t.content, t.language));
         label.appendChild(play);
       } else {
-        label.textContent = languageLabel;
+        const langText = document.createElement('span');
+        langText.textContent = languageLabel;
+        label.appendChild(langText);
       }
       const content = document.createElement('div');
       content.className = 'text-content';
@@ -646,6 +723,8 @@ function renderPostCard(post, options = {}) {
       block.className = 'text-block';
       const label = document.createElement('div');
       label.className = 'text-label';
+      const speakerBadge = createSpeakerBadge(t.speaker_type || 'none');
+      label.appendChild(speakerBadge);
       const languageLabel = getLanguageLabel(t.language);
       const option = langOptions.find((opt) => opt.value === t.language);
       if (option?.speakable) {
@@ -656,7 +735,9 @@ function renderPostCard(post, options = {}) {
         play.addEventListener('click', () => playSpeech(t.content, t.language));
         label.appendChild(play);
       } else {
-        label.textContent = languageLabel;
+        const langText = document.createElement('span');
+        langText.textContent = languageLabel;
+        label.appendChild(langText);
       }
       const content = document.createElement('div');
       content.className = 'text-content';
