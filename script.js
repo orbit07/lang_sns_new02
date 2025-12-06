@@ -39,6 +39,8 @@ function createSpeakerIcon({ icon, label }) {
   const img = document.createElement('img');
   img.src = icon;
   img.alt = label;
+  img.width = 40;
+  img.height = 40;
 
   const text = document.createElement('span');
   text.className = 'speaker-icon-label';
