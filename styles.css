@@ -92,11 +92,11 @@ button {
 .tab-button.tab-button-dashboard {
   height: 30px;
   width: 60px;
-  background: url(img/dashboard_off.svg) no-repeat center;
+  background: url(img/graph_off.svg) no-repeat center;
   background-size: 40%;
 }
 .tab-button.tab-button-dashboard.active {
-  background: url(img/dashboard_on.svg) no-repeat center;
+  background: url(img/graph_on.svg) no-repeat center;
   background-size: 40%;
 }
 .tab-button.tab-button-likes {
