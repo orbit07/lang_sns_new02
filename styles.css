@@ -192,7 +192,7 @@ button {
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   align-items: center;
-  padding: 20px 10px 10px;
+  padding: 40px 10px;
 }
 
 .dashboard-chart-container {
@@ -232,7 +232,7 @@ button {
 
 .dashboard-count-total {
   font-weight: bold;
-  font-size: 2rem;
+  font-size: 2.5rem;
 }
 
 .dashboard-count-item {
@@ -291,7 +291,7 @@ button {
   width: 12px;
   height: 12px;
   border-radius: 3px;
-  background: #e4e7ec;
+  background: rgba(255, 255, 255, .5);
 }
 
 .heatmap-legend {
@@ -314,19 +314,8 @@ button {
   gap: 4px;
 }
 
-@media (max-width: 640px) {
-  .dashboard-chart {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-text-counts {
-    align-items: center;
-    text-align: center;
-  }
-}
-
 .search-panel {
-  padding: 50px 0 0;
+  padding: 60px 0 0;
 }
 .search-box {
   display: grid;

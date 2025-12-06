@@ -588,9 +588,9 @@ function getDateKey(ts) {
 }
 
 function getHeatmapColor(count) {
-  if (count === 0) return '#E4E7EC';
+  if (count === 0) return 'rgba(255, 255, 255, .5)';
   if (count <= 2) return '#C5E0FF';
-  if (count <= 5) return '#7AB7FF';
+  if (count <= 4) return '#7AB7FF';
   return '#2F6FE4';
 }
 
@@ -746,14 +746,11 @@ function renderDashboard() {
 
   const legend = document.createElement('div');
   legend.className = 'heatmap-legend';
-  const legendLabel = document.createElement('span');
-  legendLabel.textContent = '投稿テキスト数 (直近365日)';
-  legend.appendChild(legendLabel);
   const legendItems = [
     { label: '0', count: 0 },
     { label: '1-2', count: 1 },
-    { label: '3-5', count: 3 },
-    { label: '6+', count: 6 },
+    { label: '3-4', count: 3 },
+    { label: '5+', count: 5 },
   ];
   legendItems.forEach(({ label, count }) => {
     const item = document.createElement('span');
@@ -761,9 +758,7 @@ function renderDashboard() {
     const sample = document.createElement('div');
     sample.className = 'heatmap-cell';
     sample.style.backgroundColor = getHeatmapColor(count);
-    const text = document.createElement('span');
-    text.textContent = label;
-    item.append(sample, text);
+    item.append(sample);
     legend.appendChild(item);
   });
 
