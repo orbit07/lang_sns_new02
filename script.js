@@ -74,6 +74,8 @@ function loadData() {
     console.error('Failed to load data', e);
     state.data = defaultData();
   }
+
+  ensureSpeakerFields(state.data);
 }
 
 function persistData() {
@@ -138,6 +140,21 @@ function ensureImageId(dataUrl) {
   const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   state.data.images[id] = dataUrl;
   return id;
+}
+
+function ensureSpeakerFields(data) {
+  const sync = (items = []) => {
+    items.forEach((item) => {
+      (item.texts || []).forEach((text) => {
+        const speaker = text.speaker || text.speaker_type || 'none';
+        text.speaker = speaker;
+        text.speaker_type = speaker;
+      });
+    });
+  };
+
+  sync(data?.posts);
+  sync(data?.replies);
 }
 
 function removeImageIfUnused(imageId) {
@@ -374,7 +391,7 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
   if (targetPost) {
     textAreaContainer.innerHTML = '';
     const texts = targetPost.texts || [{ content: '', language: 'ja' }];
-    texts.forEach((t) => addTextBlock(t.content, t.language, t.pronunciation || '', t.speaker_type || 'none'));
+    texts.forEach((t) => addTextBlock(t.content, t.language, t.pronunciation || '', t.speaker_type || t.speaker || 'none'));
   } else {
     addTextBlock();
   }
@@ -463,12 +480,16 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
   submitBtn.textContent = mode === 'reply' ? 'Reply' : mode === 'edit' ? 'Save' : 'Post';
 
   submitBtn.addEventListener('click', async () => {
-    const textBlocks = Array.from(textAreaContainer.children).map((el) => ({
-      content: el.querySelector('.text-area').value.trim(),
-      language: el.querySelector('.language-select-input').value,
-      pronunciation: el.querySelector('.pronunciation-input').value.trim(),
-      speaker_type: el.querySelector('.speaker-select-value')?.value || 'me',
-    }));
+    const textBlocks = Array.from(textAreaContainer.children).map((el) => {
+      const speakerValue = el.querySelector('.speaker-select-value')?.value || 'me';
+      return {
+        content: el.querySelector('.text-area').value.trim(),
+        language: el.querySelector('.language-select-input').value,
+        pronunciation: el.querySelector('.pronunciation-input').value.trim(),
+        speaker: speakerValue,
+        speaker_type: speakerValue,
+      };
+    });
     const hasContent = textBlocks.some((t) => t.content.length > 0);
     if (!hasContent) {
       alert('テキストを入力してください。');
@@ -880,7 +901,7 @@ function renderPostCard(post, options = {}) {
     post.texts.forEach((t) => {
       const blockGroup = document.createElement('div');
       blockGroup.className = 'text-block-group';
-      const speakerBadge = createSpeakerBadge(t.speaker_type || 'none');
+      const speakerBadge = createSpeakerBadge(t.speaker_type || t.speaker || 'none');
       blockGroup.appendChild(speakerBadge);
 
       const block = document.createElement('div');
@@ -999,7 +1020,7 @@ function renderPostCard(post, options = {}) {
     reply.texts.forEach((t) => {
       const blockGroup = document.createElement('div');
       blockGroup.className = 'text-block-group';
-      const speakerBadge = createSpeakerBadge(t.speaker_type || 'none');
+      const speakerBadge = createSpeakerBadge(t.speaker_type || t.speaker || 'none');
       blockGroup.appendChild(speakerBadge);
 
       const block = document.createElement('div');
@@ -1199,6 +1220,7 @@ function mergeImportedData(incoming) {
   merged.version = DATA_VERSION;
 
   state.data = merged;
+  ensureSpeakerFields(state.data);
   persistData();
   render();
 }
@@ -1206,6 +1228,64 @@ function mergeImportedData(incoming) {
 function importFromJsonString(text) {
   const json = JSON.parse(text);
   mergeImportedData(json);
+}
+
+function importConversationMessages(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    throw new Error('invalid conversation data');
+  }
+
+  const normalizeMessage = (msg) => {
+    if (!msg || typeof msg !== 'object') throw new Error('invalid message');
+    const content = String(msg.content || '').trim();
+    if (!content.length) throw new Error('content is required');
+    const speaker = msg.speaker || 'none';
+    return {
+      content,
+      language: msg.language || 'ja',
+      pronunciation: msg.pronunciation || '',
+      speaker,
+      speaker_type: speaker,
+    };
+  };
+
+  const normalized = messages.map(normalizeMessage);
+  const now = Date.now();
+  const postId = nextId();
+
+  const post = {
+    id: postId,
+    texts: [normalized[0]],
+    tags: extractTags([normalized[0]]),
+    createdAt: now,
+    updatedAt: now,
+    imageId: null,
+    imageRemoved: false,
+    isDeleted: false,
+    liked: false,
+    likedAt: null,
+    repostOf: null,
+  };
+  state.data.posts.push(post);
+
+  normalized.slice(1).forEach((text, index) => {
+    const timestamp = now + index + 1;
+    const reply = {
+      id: nextId(),
+      postId,
+      texts: [text],
+      tags: extractTags([text]),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      imageId: null,
+      isDeleted: false,
+    };
+    state.data.replies.push(reply);
+  });
+
+  ensureSpeakerFields(state.data);
+  persistData();
+  render();
 }
 
 function exportData() {
@@ -1265,13 +1345,20 @@ function setupGlobalEvents() {
   const importTextBtn = document.getElementById('import-text-btn');
   if (importTextBtn) {
     importTextBtn.addEventListener('click', () => {
-      const text = document.getElementById('import-textarea')?.value.trim();
+      const textarea = document.getElementById('import-textarea');
+      const text = textarea?.value.trim();
       if (!text) {
         alert('JSONを入力してください');
         return;
       }
       try {
-        importFromJsonString(text);
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) {
+          importConversationMessages(parsed);
+        } else {
+          mergeImportedData(parsed);
+        }
+        if (textarea) textarea.value = '';
       } catch (err) {
         alert('JSONの読み込みに失敗しました');
       }
