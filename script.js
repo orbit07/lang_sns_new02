@@ -316,8 +316,14 @@ function createTextBlockInput(value = '', lang = 'ja', pronunciation = '', speak
     removeBtn.innerHTML = '<img src="img/delete.svg" alt="削除" width="25" class="icon-inline">';
     removeBtn.addEventListener('click', () => {
       if (wrapper.parentElement.children.length > 1) {
-        wrapper.remove();
-        if (onRemove) onRemove();
+        const finishRemoval = () => {
+          wrapper.removeEventListener('transitionend', finishRemoval);
+          wrapper.remove();
+          if (onRemove) onRemove();
+        };
+        wrapper.addEventListener('transitionend', finishRemoval);
+        wrapper.classList.add('closing');
+        setTimeout(finishRemoval, 320);
       }
     });
     removeBtn.className = 'remove-text-btn';
@@ -348,7 +354,7 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
 
   const updateTextControls = () => {
     const count = textAreaContainer.children.length;
-    if (addBtn) addBtn.disabled = count >= 3;
+    if (addBtn) addBtn.disabled = count >= 4;
     const removeButtons = textAreaContainer.querySelectorAll('.remove-text-btn');
     removeButtons.forEach((btn) => {
       btn.disabled = count <= 1;
@@ -376,7 +382,7 @@ function buildPostForm({ mode = 'create', targetPost = null, parentId = null }) 
   addBtn.textContent = '＋';
   addBtn.className = 'add-text-button';
   addBtn.addEventListener('click', () => {
-    if (textAreaContainer.children.length >= 3) return;
+    if (textAreaContainer.children.length >= 4) return;
     addTextBlock();
   });
 
@@ -559,44 +565,66 @@ function render() {
   runSearch();
 }
 
-function renderTimeline() {
-  const container = document.getElementById('timeline-list');
+function renderCardList(container, items, { emptyMessage, highlightImage = false } = {}) {
+  if (container._infiniteObserver) {
+    container._infiniteObserver.disconnect();
+  }
   container.innerHTML = '';
-  const sorted = [...state.data.posts].sort((a, b) => b.createdAt - a.createdAt);
-  if (!sorted.length) {
-    container.innerHTML = '<div class="empty-state">投稿がありません。</div>';
+  if (!items.length) {
+    container.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
     return;
   }
-  sorted.forEach((post) => {
-    const node = renderPostCard(post);
-    container.appendChild(node);
-  });
+
+  const initialCount = 50;
+  const batchSize = 20;
+  let index = 0;
+  let observer = null;
+
+  const addSentinel = () => {
+    const sentinel = document.createElement('div');
+    sentinel.className = 'load-sentinel';
+    container.appendChild(sentinel);
+    if (observer) observer.observe(sentinel);
+  };
+
+  const renderBatch = (count) => {
+    const slice = items.slice(index, index + count);
+    slice.forEach((post) => container.appendChild(renderPostCard(post, { highlightImage })));
+    index += count;
+    if (index < items.length) addSentinel();
+  };
+
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        observer.unobserve(entry.target);
+        entry.target.remove();
+        renderBatch(batchSize);
+      }
+    });
+  }, { root: null, rootMargin: '200px' });
+
+  renderBatch(initialCount);
+  container._infiniteObserver = observer;
+}
+
+function renderTimeline() {
+  const container = document.getElementById('timeline-list');
+  const sorted = [...state.data.posts].sort((a, b) => b.createdAt - a.createdAt);
+  renderCardList(container, sorted, { emptyMessage: '投稿がありません。' });
 }
 
 function renderImages() {
   const container = document.getElementById('images-list');
-  container.innerHTML = '';
   const posts = state.data.posts.filter((p) => p.imageId && state.data.images[p.imageId]);
-  if (!posts.length) {
-    container.innerHTML = '<div class="empty-state">画像付きポストはありません。</div>';
-    return;
-  }
   posts.sort((a, b) => b.createdAt - a.createdAt);
-  posts.forEach((post) => {
-    const node = renderPostCard(post, { highlightImage: true });
-    container.appendChild(node);
-  });
+  renderCardList(container, posts, { emptyMessage: '画像付きポストはありません。', highlightImage: true });
 }
 
 function renderLikes() {
   const container = document.getElementById('likes-list');
-  container.innerHTML = '';
   const liked = state.data.posts.filter((p) => p.liked).sort((a, b) => (b.likedAt || 0) - (a.likedAt || 0));
-  if (!liked.length) {
-    container.innerHTML = '<div class="empty-state">いいねしたポストはありません。</div>';
-    return;
-  }
-  liked.forEach((post) => container.appendChild(renderPostCard(post)));
+  renderCardList(container, liked, { emptyMessage: 'いいねしたポストはありません。' });
 }
 
 function renderPostCard(post, options = {}) {
@@ -875,7 +903,6 @@ function isSearchLikeFilterActive() {
 function runSearch() {
   const query = document.getElementById('search-input').value.trim();
   const container = document.getElementById('search-results');
-  container.innerHTML = '';
   const terms = query.split(/\s+/).filter(Boolean);
   let tagFilter = null;
   const textTerms = [];
@@ -898,11 +925,7 @@ function runSearch() {
   }
   results.sort((a, b) => b.createdAt - a.createdAt);
 
-  if (!results.length) {
-    container.innerHTML = '<div class="empty-state">検索結果がありません。</div>';
-    return;
-  }
-  results.forEach((p) => container.appendChild(renderPostCard(p)));
+  renderCardList(container, results, { emptyMessage: '検索結果がありません。' });
 }
 
 function exportData() {

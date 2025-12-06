@@ -283,6 +283,11 @@ button {
   gap: 10px;
   align-items: flex-start;
   overflow: visible;
+  transition: transform 240ms ease, opacity 240ms ease;
+}
+.text-area-wrapper.closing {
+  transform: translateY(-8px);
+  opacity: 0;
 }
 .text-area-fields { display: flex; flex-direction: column; gap: 10px; }
 .speaker-select { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 6px; }
@@ -337,6 +342,10 @@ button {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 10px;
+}
+.load-sentinel {
+  height: 1px;
+  width: 100%;
 }
 .pronunciation-input {
   width: 100%;
