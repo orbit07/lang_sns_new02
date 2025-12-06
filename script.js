@@ -15,7 +15,14 @@ const state = {
   data: defaultData(),
   currentTab: 'timeline',
   imageCache: new Map(),
+  dashboardChart: null,
 };
+
+const dashboardLanguages = [
+  { value: 'en-US', label: '英語', color: '#2F6FE4' },
+  { value: 'ko-KR', label: '韓国語', color: '#7AB7FF' },
+  { value: 'zh-TW', label: '中国語', color: '#C5E0FF' },
+];
 
 const langOptions = [
   { value: 'ja', label: '日本語', speakable: false },
@@ -552,11 +559,212 @@ function playSpeech(text, lang) {
   window.speechSynthesis.speak(utter);
 }
 
+function collectTextEntries() {
+  const entries = [];
+  const pushEntries = (items) => {
+    items.forEach((item) => {
+      const createdAt = item.createdAt;
+      (item.texts || []).forEach((text) => {
+        const content = text.content?.trim() || '';
+        if (!content.length) return;
+        entries.push({
+          language: text.language,
+          createdAt,
+        });
+      });
+    });
+  };
+  pushEntries(state.data.posts);
+  pushEntries(state.data.replies);
+  return entries;
+}
+
+function getDateKey(ts) {
+  const d = new Date(ts);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getHeatmapColor(count) {
+  if (count === 0) return '#E4E7EC';
+  if (count <= 2) return '#C5E0FF';
+  if (count <= 5) return '#7AB7FF';
+  return '#2F6FE4';
+}
+
 function render() {
   renderTimeline();
-  renderImages();
+  renderDashboard();
   renderLikes();
   runSearch();
+}
+
+function renderDashboard() {
+  const chartContainer = document.getElementById('dashboard-chart-container');
+  const countsContainer = document.getElementById('dashboard-text-counts');
+  const heatmapContainer = document.getElementById('dashboard-heatmap-container');
+  if (!chartContainer || !countsContainer || !heatmapContainer) return;
+
+  const entries = collectTextEntries();
+  const counts = { 'en-US': 0, 'ko-KR': 0, 'zh-TW': 0 };
+  entries.forEach((entry) => {
+    if (entry.language === 'ja') return;
+    if (Object.prototype.hasOwnProperty.call(counts, entry.language)) counts[entry.language] += 1;
+  });
+  const total = Object.values(counts).reduce((sum, val) => sum + val, 0);
+
+  chartContainer.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  canvas.id = 'dashboard-chart-canvas';
+  chartContainer.appendChild(canvas);
+
+  const chartData = {
+    labels: dashboardLanguages.map((l) => l.label),
+    datasets: [
+      {
+        data: dashboardLanguages.map((l) => counts[l.value]),
+        backgroundColor: dashboardLanguages.map((l) => l.color),
+        borderWidth: 0,
+      },
+    ],
+  };
+
+  if (state.dashboardChart) {
+    state.dashboardChart.destroy();
+    state.dashboardChart = null;
+  }
+
+  const centerTextPlugin = {
+    id: 'centerText',
+    afterDraw(chart, args, opts) {
+      const meta = chart.getDatasetMeta(0);
+      const firstArc = meta?.data?.[0];
+      const { chartArea } = chart;
+      const x = firstArc?.x ?? (chartArea.left + chartArea.right) / 2;
+      const y = firstArc?.y ?? (chartArea.top + chartArea.bottom) / 2;
+      chart.ctx.save();
+      chart.ctx.font = 'bold 18px "Helvetica Neue", Arial, sans-serif';
+      chart.ctx.fillStyle = '#1f2933';
+      chart.ctx.textAlign = 'center';
+      chart.ctx.textBaseline = 'middle';
+      chart.ctx.fillText(opts.text, x, y);
+      chart.ctx.restore();
+    },
+  };
+
+  state.dashboardChart = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: chartData,
+    options: {
+      cutout: '70%',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.label}: ${context.raw} texts`,
+          },
+        },
+        centerText: { text: total },
+      },
+    },
+    plugins: [centerTextPlugin],
+  });
+
+  countsContainer.innerHTML = '';
+  const totalEl = document.createElement('div');
+  totalEl.className = 'dashboard-count-total';
+  totalEl.textContent = `total texts: ${total}`;
+  countsContainer.appendChild(totalEl);
+
+  dashboardLanguages.forEach((lang) => {
+    const row = document.createElement('div');
+    row.className = 'dashboard-count-item';
+    const swatch = document.createElement('span');
+    swatch.className = 'dashboard-count-swatch';
+    swatch.style.backgroundColor = lang.color;
+    const label = document.createElement('span');
+    label.textContent = `${lang.label}: ${counts[lang.value]}`;
+    row.append(swatch, label);
+    countsContainer.appendChild(row);
+  });
+
+  const filteredEntries = entries.filter((entry) => Object.prototype.hasOwnProperty.call(counts, entry.language));
+  const dateCounts = new Map();
+  filteredEntries.forEach((entry) => {
+    const key = getDateKey(entry.createdAt);
+    dateCounts.set(key, (dateCounts.get(key) || 0) + 1);
+  });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = [];
+  for (let i = 364; i >= 0; i -= 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    const key = getDateKey(date);
+    days.push({ date, key, count: dateCounts.get(key) || 0 });
+  }
+
+  const startOffset = days[0].date.getDay();
+  const columns = [];
+  let column = [];
+  for (let i = 0; i < startOffset; i += 1) {
+    column.push(null);
+  }
+  days.forEach((day) => {
+    column.push(day);
+    if (column.length === 7) {
+      columns.push(column);
+      column = [];
+    }
+  });
+  if (column.length) columns.push(column);
+
+  heatmapContainer.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'heatmap-grid';
+  columns.forEach((col) => {
+    const colEl = document.createElement('div');
+    colEl.className = 'heatmap-column';
+    col.forEach((cell) => {
+      const cellEl = document.createElement('div');
+      cellEl.className = 'heatmap-cell';
+      if (cell) {
+        cellEl.style.backgroundColor = getHeatmapColor(cell.count);
+        cellEl.title = `${cell.key}: ${cell.count} texts`;
+      }
+      colEl.appendChild(cellEl);
+    });
+    grid.appendChild(colEl);
+  });
+
+  const legend = document.createElement('div');
+  legend.className = 'heatmap-legend';
+  const legendLabel = document.createElement('span');
+  legendLabel.textContent = '投稿テキスト数 (直近365日)';
+  legend.appendChild(legendLabel);
+  const legendItems = [
+    { label: '0', count: 0 },
+    { label: '1-2', count: 1 },
+    { label: '3-5', count: 3 },
+    { label: '6+', count: 6 },
+  ];
+  legendItems.forEach(({ label, count }) => {
+    const item = document.createElement('span');
+    item.className = 'heatmap-legend-item';
+    const sample = document.createElement('div');
+    sample.className = 'heatmap-cell';
+    sample.style.backgroundColor = getHeatmapColor(count);
+    const text = document.createElement('span');
+    text.textContent = label;
+    item.append(sample, text);
+    legend.appendChild(item);
+  });
+
+  heatmapContainer.append(grid, legend);
 }
 
 function renderCardList(container, items, { emptyMessage, highlightImage = false } = {}) {
