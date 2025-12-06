@@ -209,19 +209,6 @@ button {
   height: 30vw !important;
   max-width: 420px;
   max-height: 420px;
-  animation: dashboard-donut-spin 900ms ease-out;
-  transform-origin: center;
-}
-
-@keyframes dashboard-donut-spin {
-  from {
-    transform: rotate(-360deg);
-    opacity: 0;
-  }
-  to {
-    transform: rotate(0deg);
-    opacity: 1;
-  }
 }
 
 .dashboard-chart-total {

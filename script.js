@@ -648,8 +648,11 @@ function renderDashboard() {
     options: {
       cutout: '70%',
       responsive: true,
+      rotation: -90 * (Math.PI / 180),
       animation: {
-        animateRotate: !state.hasPlayedDashboardAnimation,
+        animateRotate: true,
+        animateScale: false,
+        duration: 1200
       },
       plugins: {
         legend: { display: false },
