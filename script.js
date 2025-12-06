@@ -597,7 +597,6 @@ function getHeatmapColor(count) {
 
 function render() {
   renderTimeline();
-  renderLikes();
   runSearch();
   if (state.currentTab === 'dashboard') {
     renderDashboard();
@@ -850,12 +849,6 @@ function renderImages() {
   const posts = state.data.posts.filter((p) => p.imageId && state.data.images[p.imageId]);
   posts.sort((a, b) => b.createdAt - a.createdAt);
   renderCardList(container, posts, { emptyMessage: '画像付きポストはありません。', highlightImage: true });
-}
-
-function renderLikes() {
-  const container = document.getElementById('likes-list');
-  const liked = state.data.posts.filter((p) => p.liked).sort((a, b) => (b.likedAt || 0) - (a.likedAt || 0));
-  renderCardList(container, liked, { emptyMessage: 'いいねしたポストはありません。' });
 }
 
 function renderPostCard(post, options = {}) {
@@ -1159,6 +1152,62 @@ function runSearch() {
   renderCardList(container, results, { emptyMessage: '検索結果がありません。' });
 }
 
+function getUpdatedTimestamp(item) {
+  return (item?.updatedAt || item?.createdAt || 0);
+}
+
+function mergeCollections(existing, incoming) {
+  const map = new Map();
+  (existing || []).forEach((item) => {
+    if (item?.id == null) return;
+    map.set(item.id, item);
+  });
+
+  (incoming || []).forEach((item) => {
+    if (item?.id == null) return;
+    if (!map.has(item.id)) {
+      map.set(item.id, item);
+      return;
+    }
+    const current = map.get(item.id);
+    const shouldReplace = getUpdatedTimestamp(item) > getUpdatedTimestamp(current);
+    map.set(item.id, shouldReplace ? { ...current, ...item } : current);
+  });
+
+  return Array.from(map.values());
+}
+
+function mergeImportedData(incoming) {
+  if (!incoming || typeof incoming !== 'object') throw new Error('invalid data');
+  const merged = { ...defaultData(), ...state.data };
+
+  merged.posts = mergeCollections(merged.posts, incoming.posts || []);
+  merged.replies = mergeCollections(merged.replies, incoming.replies || []);
+  merged.images = { ...merged.images };
+  Object.entries(incoming.images || {}).forEach(([id, dataUrl]) => {
+    if (!merged.images[id]) merged.images[id] = dataUrl;
+  });
+
+  const incomingLastId = Number(incoming.lastId) || 0;
+  const maxExistingId = Math.max(
+    0,
+    ...merged.posts.map((p) => Number(p.id) || 0),
+    ...merged.replies.map((r) => Number(r.id) || 0),
+    merged.lastId || 0,
+  );
+  merged.lastId = Math.max(maxExistingId, incomingLastId);
+  merged.version = DATA_VERSION;
+
+  state.data = merged;
+  persistData();
+  render();
+}
+
+function importFromJsonString(text) {
+  const json = JSON.parse(text);
+  mergeImportedData(json);
+}
+
 function exportData() {
   const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -1174,10 +1223,7 @@ function importData(file) {
   const reader = new FileReader();
   reader.onload = () => {
     try {
-      const json = JSON.parse(reader.result);
-      state.data = { ...defaultData(), ...json, version: DATA_VERSION };
-      persistData();
-      render();
+      importFromJsonString(reader.result);
     } catch (e) {
       alert('JSONの読み込みに失敗しました');
     }
@@ -1212,7 +1258,25 @@ function setupGlobalEvents() {
   document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
   document.getElementById('image-viewer').addEventListener('click', (e) => { if (e.target.id === 'image-viewer') closeImageViewer(); });
   document.getElementById('export-btn').addEventListener('click', exportData);
-  document.getElementById('import-input').addEventListener('change', (e) => importData(e.target.files[0]));
+  document.getElementById('import-input').addEventListener('change', (e) => {
+    importData(e.target.files[0]);
+    e.target.value = '';
+  });
+  const importTextBtn = document.getElementById('import-text-btn');
+  if (importTextBtn) {
+    importTextBtn.addEventListener('click', () => {
+      const text = document.getElementById('import-textarea')?.value.trim();
+      if (!text) {
+        alert('JSONを入力してください');
+        return;
+      }
+      try {
+        importFromJsonString(text);
+      } catch (err) {
+        alert('JSONの読み込みに失敗しました');
+      }
+    });
+  }
   document.getElementById('search-btn').addEventListener('click', runSearch);
   const likeFilterBtn = document.getElementById('search-like-btn');
   if (likeFilterBtn) likeFilterBtn.addEventListener('click', () => { toggleSearchLikeFilter(); runSearch(); });

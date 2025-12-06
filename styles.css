@@ -571,6 +571,30 @@ button {
 }
 .file-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; pointer-events: none; }
 
+.import-export-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px;
+}
+
+.import-textarea-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.import-textarea {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid #dce6f5;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 1.4rem;
+  resize: vertical;
+  background: rgba(255, 255, 255, .8);
+}
+
 .image-actions {
   display: grid;
   grid-template-columns: 1fr auto;

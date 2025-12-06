@@ -24,13 +24,6 @@
   <main class="main-container">
     <section id="timeline" class="tab-panel active">
       <div id="timeline-list" class="card-list"></div>
-      <div class="header-actions">
-        <label class="file-button import-button">
-          <input type="file" id="import-input" accept="application/json" class="file-input" />
-          Import
-        </label>
-        <button id="export-btn" class="export-button">Export</button>
-      </div>
     </section>
 
     <section id="search" class="tab-panel search-panel">
@@ -55,7 +48,20 @@
     </section>
 
     <section id="likes" class="tab-panel">
-      <div id="likes-list" class="card-list"></div>
+      <div class="import-export-panel">
+        <div class="header-actions">
+          <label class="file-button import-button">
+            <input type="file" id="import-input" accept="application/json" class="file-input" />
+            インポート
+          </label>
+          <button id="export-btn" class="export-button">エクスポート</button>
+        </div>
+        <div class="import-textarea-block">
+          <p class="helper">JSONを貼り付けて差分インポートできます。</p>
+          <textarea id="import-textarea" class="import-textarea" placeholder="ここにJSONを貼り付けてください"></textarea>
+          <button id="import-text-btn" class="primary-button">テキストからインポート</button>
+        </div>
+      </div>
     </section>
   </main>
 
