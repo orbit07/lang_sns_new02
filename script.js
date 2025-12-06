@@ -858,6 +858,20 @@ function toggleLike(id) {
   render();
 }
 
+function toggleSearchLikeFilter() {
+  const btn = document.getElementById('search-like-btn');
+  if (!btn) return;
+  const nextState = !btn.classList.contains('active');
+  btn.classList.toggle('active', nextState);
+  btn.setAttribute('aria-pressed', nextState);
+  const icon = btn.querySelector('img');
+  if (icon) icon.src = nextState ? 'img/hart_on02.svg' : 'img/hart_off.svg';
+}
+
+function isSearchLikeFilterActive() {
+  return document.getElementById('search-like-btn')?.classList.contains('active');
+}
+
 function runSearch() {
   const query = document.getElementById('search-input').value.trim();
   const container = document.getElementById('search-results');
@@ -878,6 +892,9 @@ function runSearch() {
   if (textTerms.length) {
     const lowerTerms = textTerms.map((t) => t.toLowerCase());
     results = results.filter((p) => lowerTerms.every((term) => p.texts.some((t) => t.content.toLowerCase().includes(term))));
+  }
+  if (isSearchLikeFilterActive()) {
+    results = results.filter((p) => p.liked);
   }
   results.sort((a, b) => b.createdAt - a.createdAt);
 
@@ -940,6 +957,8 @@ function setupGlobalEvents() {
   document.getElementById('export-btn').addEventListener('click', exportData);
   document.getElementById('import-input').addEventListener('change', (e) => importData(e.target.files[0]));
   document.getElementById('search-btn').addEventListener('click', runSearch);
+  const likeFilterBtn = document.getElementById('search-like-btn');
+  if (likeFilterBtn) likeFilterBtn.addEventListener('click', () => { toggleSearchLikeFilter(); runSearch(); });
   document.getElementById('search-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
   window.addEventListener('beforeunload', () => window.speechSynthesis.cancel());
 }
