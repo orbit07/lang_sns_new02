@@ -620,6 +620,11 @@ function renderDashboard() {
   canvas.id = 'dashboard-chart-canvas';
   chartContainer.appendChild(canvas);
 
+  const centerTotal = document.createElement('div');
+  centerTotal.className = 'dashboard-count-total dashboard-chart-total';
+  centerTotal.textContent = total;
+  chartContainer.appendChild(centerTotal);
+
   const chartData = {
     labels: dashboardLanguages.map((l) => l.label),
     datasets: [
@@ -636,24 +641,6 @@ function renderDashboard() {
     state.dashboardChart = null;
   }
 
-  const centerTextPlugin = {
-    id: 'centerText',
-    afterDraw(chart, args, opts) {
-      const meta = chart.getDatasetMeta(0);
-      const firstArc = meta?.data?.[0];
-      const { chartArea } = chart;
-      const x = firstArc?.x ?? (chartArea.left + chartArea.right) / 2;
-      const y = firstArc?.y ?? (chartArea.top + chartArea.bottom) / 2;
-      chart.ctx.save();
-      chart.ctx.font = 'bold 18px "Helvetica Neue", Arial, sans-serif';
-      chart.ctx.fillStyle = '#1f2933';
-      chart.ctx.textAlign = 'center';
-      chart.ctx.textBaseline = 'middle';
-      chart.ctx.fillText(opts.text, x, y);
-      chart.ctx.restore();
-    },
-  };
-
   state.dashboardChart = new Chart(canvas.getContext('2d'), {
     type: 'doughnut',
     data: chartData,
@@ -667,15 +654,13 @@ function renderDashboard() {
             label: (context) => `${context.label}: ${context.raw} texts`,
           },
         },
-        centerText: { text: total },
       },
     },
-    plugins: [centerTextPlugin],
   });
 
   countsContainer.innerHTML = '';
   const totalEl = document.createElement('div');
-  totalEl.className = 'dashboard-count-total';
+  totalEl.className = 'dashboard-count-summary';
   totalEl.textContent = `total texts: ${total}`;
   countsContainer.appendChild(totalEl);
 
