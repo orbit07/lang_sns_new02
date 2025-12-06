@@ -597,9 +597,11 @@ function getHeatmapColor(count) {
 
 function render() {
   renderTimeline();
-  renderDashboard();
   renderLikes();
   runSearch();
+  if (state.currentTab === 'dashboard') {
+    renderDashboard();
+  }
 }
 
 function renderDashboard() {
@@ -637,33 +639,46 @@ function renderDashboard() {
     ],
   };
 
+  // 👇 Chart.js はまだ描画しない（ここが重要）
   if (state.dashboardChart) {
     state.dashboardChart.destroy();
     state.dashboardChart = null;
   }
 
-  state.dashboardChart = new Chart(canvas.getContext('2d'), {
-    type: 'doughnut',
-    data: chartData,
-    options: {
-      cutout: '70%',
-      responsive: true,
-      rotation: -90 * (Math.PI / 180),
-      animation: {
-        animateRotate: true,
-        animateScale: false,
-        duration: 1200
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (context) => `${context.label}: ${context.raw} texts`,
+  // ✅ レイアウト確定後（1フレーム後）に描画
+  requestAnimationFrame(() => {
+    // ① Canvasサイズ確定
+    const w = 113;
+    const h = 113; // 好きな高さ
+    canvas.width = w;
+    canvas.height = h;
+
+    // ② Chart生成 (ここで初めてOK)
+    state.dashboardChart = new Chart(canvas.getContext('2d'), {
+      type: 'doughnut',
+      data: chartData,
+      options: {
+        responsive: false,   // ← Canvas拡大で0に戻されるのを防止
+        rotation: -90 * (Math.PI / 180),
+        cutout: '70%',
+        animation: {
+          animateRotate: true,
+          animateScale: false,
+          duration: 1200
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.label}: ${context.raw} texts`,
+            },
           },
         },
       },
-    },
+    });
   });
+
+  // ===== ここより下はそのままでOK ↓ =====
 
   state.hasPlayedDashboardAnimation = true;
 
@@ -774,10 +789,12 @@ function renderDashboard() {
 
   heatmapContainer.append(scrollArea, legend);
 
+  // 最新が右端なので、右端から表示
   requestAnimationFrame(() => {
-    scrollArea.scrollLeft = 0;
+    scrollArea.scrollLeft = scrollArea.scrollWidth;
   });
 }
+
 
 function renderCardList(container, items, { emptyMessage, highlightImage = false } = {}) {
   if (container._infiniteObserver) {
@@ -1178,6 +1195,9 @@ function setupTabs() {
       document.querySelectorAll('.tab-panel').forEach((panel) => {
         panel.classList.toggle('active', panel.id === state.currentTab);
       });
+      if (state.currentTab === 'dashboard') {
+        renderDashboard();
+      }
     });
   });
 }
