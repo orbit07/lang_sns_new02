@@ -659,11 +659,6 @@ function renderDashboard() {
   });
 
   countsContainer.innerHTML = '';
-  const totalEl = document.createElement('div');
-  totalEl.className = 'dashboard-count-summary';
-  totalEl.textContent = `total texts: ${total}`;
-  countsContainer.appendChild(totalEl);
-
   dashboardLanguages.forEach((lang) => {
     const row = document.createElement('div');
     row.className = 'dashboard-count-item';
@@ -709,9 +704,26 @@ function renderDashboard() {
   if (column.length) columns.push(column);
 
   heatmapContainer.innerHTML = '';
+  const scrollArea = document.createElement('div');
+  scrollArea.className = 'heatmap-scroll-area';
+
+  const monthsRow = document.createElement('div');
+  monthsRow.className = 'heatmap-months';
+
   const grid = document.createElement('div');
   grid.className = 'heatmap-grid';
+  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  let lastMonth = null;
   columns.forEach((col) => {
+    const firstDay = col.find((cell) => cell);
+    const currentMonth = firstDay ? firstDay.date.getMonth() : lastMonth;
+    const monthLabel = currentMonth !== null && currentMonth !== lastMonth ? monthLabels[currentMonth] : '';
+
+    const monthEl = document.createElement('div');
+    monthEl.className = 'heatmap-month';
+    monthEl.textContent = monthLabel;
+    monthsRow.appendChild(monthEl);
+
     const colEl = document.createElement('div');
     colEl.className = 'heatmap-column';
     col.forEach((cell) => {
@@ -724,7 +736,13 @@ function renderDashboard() {
       colEl.appendChild(cellEl);
     });
     grid.appendChild(colEl);
+
+    if (firstDay) {
+      lastMonth = firstDay.date.getMonth();
+    }
   });
+
+  scrollArea.append(monthsRow, grid);
 
   const legend = document.createElement('div');
   legend.className = 'heatmap-legend';
@@ -749,7 +767,11 @@ function renderDashboard() {
     legend.appendChild(item);
   });
 
-  heatmapContainer.append(grid, legend);
+  heatmapContainer.append(scrollArea, legend);
+
+  requestAnimationFrame(() => {
+    scrollArea.scrollLeft = scrollArea.scrollWidth;
+  });
 }
 
 function renderCardList(container, items, { emptyMessage, highlightImage = false } = {}) {
