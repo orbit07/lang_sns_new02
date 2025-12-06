@@ -125,7 +125,10 @@ button {
   flex-direction: column;
   gap: 5px;
   padding: 10px;
-  border-bottom: 1px solid #fff;
+  border-top: 1px solid #fff;
+}
+.card:first-of-type {
+  border-top: none;
 }
 
 .card-meta { font-size: 1.2rem; color: var(--muted); display: flex; gap: 5px; align-items: center; }
