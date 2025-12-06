@@ -316,14 +316,8 @@ function createTextBlockInput(value = '', lang = 'ja', pronunciation = '', speak
     removeBtn.innerHTML = '<img src="img/delete.svg" alt="削除" width="25" class="icon-inline">';
     removeBtn.addEventListener('click', () => {
       if (wrapper.parentElement.children.length > 1) {
-        const finishRemoval = () => {
-          wrapper.removeEventListener('transitionend', finishRemoval);
-          wrapper.remove();
-          if (onRemove) onRemove();
-        };
-        wrapper.addEventListener('transitionend', finishRemoval);
-        wrapper.classList.add('closing');
-        setTimeout(finishRemoval, 320);
+        wrapper.remove();
+        if (onRemove) onRemove();
       }
     });
     removeBtn.className = 'remove-text-btn';
