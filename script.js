@@ -865,7 +865,7 @@ function toggleSearchLikeFilter() {
   btn.classList.toggle('active', nextState);
   btn.setAttribute('aria-pressed', nextState);
   const icon = btn.querySelector('img');
-  if (icon) icon.src = nextState ? 'img/hart_on02.svg' : 'img/hart_off.svg';
+  if (icon) icon.src = nextState ? 'img/hart_on.svg' : 'img/hart_off.svg';
 }
 
 function isSearchLikeFilterActive() {
