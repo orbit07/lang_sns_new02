@@ -714,7 +714,8 @@ function renderDashboard() {
   grid.className = 'heatmap-grid';
   const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   let lastMonth = null;
-  columns.forEach((col) => {
+  const columnsNewestFirst = [...columns].reverse();
+  columnsNewestFirst.forEach((col) => {
     const firstDay = col.find((cell) => cell);
     const currentMonth = firstDay ? firstDay.date.getMonth() : lastMonth;
     const monthLabel = currentMonth !== null && currentMonth !== lastMonth ? monthLabels[currentMonth] : '';
@@ -765,7 +766,7 @@ function renderDashboard() {
   heatmapContainer.append(scrollArea, legend);
 
   requestAnimationFrame(() => {
-    scrollArea.scrollLeft = scrollArea.scrollWidth;
+    scrollArea.scrollLeft = 0;
   });
 }
 
