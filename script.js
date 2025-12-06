@@ -16,6 +16,7 @@ const state = {
   currentTab: 'timeline',
   imageCache: new Map(),
   dashboardChart: null,
+  hasPlayedDashboardAnimation: false,
 };
 
 const dashboardLanguages = [
@@ -647,6 +648,9 @@ function renderDashboard() {
     options: {
       cutout: '70%',
       responsive: true,
+      animation: {
+        animateRotate: !state.hasPlayedDashboardAnimation,
+      },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -657,6 +661,8 @@ function renderDashboard() {
       },
     },
   });
+
+  state.hasPlayedDashboardAnimation = true;
 
   countsContainer.innerHTML = '';
   dashboardLanguages.forEach((lang) => {
