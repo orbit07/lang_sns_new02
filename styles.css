@@ -55,7 +55,6 @@ button {
   align-items: center;
   flex-wrap: wrap;
   margin-top: 10px;
-  padding: 0 10px;
 }
 
 .tabs { display: flex; gap: 8px; justify-content: space-between; }
@@ -99,14 +98,14 @@ button {
   background: url(img/graph_on.svg) no-repeat center;
   background-size: 40%;
 }
-.tab-button.tab-button-likes {
+.tab-button.tab-button-import {
   height: 30px;
   width: 60px;
-  background: url(img/hart_off.svg) no-repeat center;
+  background: url(img/import_off.svg) no-repeat center;
   background-size: 40%;
 }
-.tab-button.tab-button-likes.active {
-  background: url(img/hart_on02.svg) no-repeat center;
+.tab-button.tab-button-import.active {
+  background: url(img/import_on.svg) no-repeat center;
   background-size: 40%;
 }
 
@@ -593,9 +592,14 @@ button {
   border: 1px solid #dce6f5;
   border-radius: 10px;
   padding: 10px;
-  font-size: 1.4rem;
   resize: vertical;
   background: rgba(255, 255, 255, .8);
+}
+
+.import-text-btn {
+  padding: 10px 20px;
+  text-align: center;
+  font-weight: 600;
 }
 
 .image-actions {
@@ -637,7 +641,7 @@ button {
   top: 5px;
 }
 
-.helper { font-size: 1.4rem; color: var(--muted); }
+.helper { color: var(--muted); }
 
 .empty-state { text-align: center; padding: 24px; color: var(--muted); }
 
